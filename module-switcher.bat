@@ -8,6 +8,7 @@ set "TEMP_FOLDER=%TEMP%\discord_voice_update"
 set "DISCORD_PATH=%LOCALAPPDATA%\Discord"
 set "MODULES_FOLDER=modules"
 set "VOICE_MODULE_PREFIX=discord_voice-"
+set "MAX_RETRIES=3"
 
 REM Request admin privileges
 >nul 2>&1 "%SYSTEMROOT%\system32\cacls.exe" "%SYSTEMROOT%\system32\config\system"
@@ -62,15 +63,41 @@ taskkill /f /im discord.exe >nul 2>&1
 REM Construct the ZIP download URL
 set "GITHUB_ZIP_URL=%GITHUB_FOLDER_URL:/tree/main/=/archive/main/%.zip"
 
-REM Download the update ZIP
+REM Download the update ZIP with retry
 echo Downloading update files...
 if not exist "%TEMP_FOLDER%" mkdir "%TEMP_FOLDER%"
+
+:download_retry
+set /a "RETRY_COUNT+=1"
+echo Attempt %RETRY_COUNT% of %MAX_RETRIES%...
 curl -L -o "%TEMP_FOLDER%\discord_voice.zip" "%GITHUB_ZIP_URL%"
 
 if not exist "%TEMP_FOLDER%\discord_voice.zip" (
     echo Failed to download update files.
-    pause
-    exit
+    if %RETRY_COUNT% LSS %MAX_RETRIES% (
+        echo Retrying in 5 seconds...
+        timeout /t 5 >nul
+        goto download_retry
+    ) else (
+        echo Maximum retries reached.
+        pause
+        exit
+    )
+)
+
+REM Check ZIP integrity (basic size check)
+for %%F in ("%TEMP_FOLDER%\discord_voice.zip") do set "ZIP_SIZE=%%~zF"
+if %ZIP_SIZE% LSS 1000 (
+    echo Downloaded ZIP file is too small. Possible corruption.
+    if %RETRY_COUNT% LSS %MAX_RETRIES% (
+        echo Retrying in 5 seconds...
+        timeout /t 5 >nul
+        goto download_retry
+    ) else (
+        echo Maximum retries reached.
+        pause
+        exit
+    )
 )
 
 REM Extract the update files
