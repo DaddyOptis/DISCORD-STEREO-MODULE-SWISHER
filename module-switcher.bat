@@ -9,34 +9,6 @@ set "DISCORD_PATH=%LOCALAPPDATA%\Discord"
 set "MODULES_FOLDER=modules"
 set "VOICE_MODULE_PREFIX=discord_voice-"
 
-REM Check for updates before anything else
-echo Checking for updates...
-curl -s %UPDATE_CHECK_URL% > current_version.txt
-if exist "%~dpnx0" (
-    fc /b current_version.txt "%~nx0" >nul
-    if errorlevel 1 (
-        echo Update available. Downloading...
-        curl -s %GITHUB_RAW_URL% -o "%UPDATE_FILENAME%"
-        if exist "%UPDATE_FILENAME%" (
-            start "" /wait "%UPDATE_FILENAME%"
-            del "%~dpnx0"
-            del current_version.txt
-            exit
-        ) else (
-            echo Failed to download update.
-            pause
-            exit
-        )
-    ) else (
-        echo No update available.
-        del current_version.txt
-    )
-) else (
-    echo Unable to check for updates.
-    pause
-    exit
-)
-
 REM Request admin privileges
 >nul 2>&1 "%SYSTEMROOT%\system32\cacls.exe" "%SYSTEMROOT%\system32\config\system"
 if '%errorlevel%' NEQ '0' (
@@ -53,6 +25,35 @@ exit /B
 
 :gotAdmin
 echo Administrator privileges granted.
+
+REM Check for updates
+echo Checking for updates...
+curl -s %UPDATE_CHECK_URL% > remote_file.txt
+
+if exist "%~dpnx0" (
+    fc /b "%~dpnx0" remote_file.txt >nul
+    if errorlevel 1 (
+        echo Update available. Downloading...
+        curl -s %UPDATE_CHECK_URL% -o "%UPDATE_FILENAME%"
+        if exist "%UPDATE_FILENAME%" (
+            start "" /wait "%UPDATE_FILENAME%"
+            del "%~dpnx0"
+            del remote_file.txt
+            exit
+        ) else (
+            echo Failed to download update.
+            pause
+            exit
+        )
+    ) else (
+        echo No update available.
+        del remote_file.txt
+    )
+) else (
+    echo Unable to check for updates.
+    pause
+    exit
+)
 
 REM Kill Discord
 echo Killing Discord processes...
