@@ -7,7 +7,7 @@ set "UPDATE_FILENAME=update.bat"
 set "TEMP_FOLDER=%TEMP%\discord_voice_update"
 set "DISCORD_PATH=%LOCALAPPDATA%\Discord"
 set "MODULES_FOLDER=modules"
-set "VOICE_MODULE_PREFIX=discord_voice-"
+set "VOICE_MODULE_PREFIX=discord_voice-1"
 set "MAX_RETRIES=3"
 
 REM Request admin privileges
